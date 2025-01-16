@@ -206,12 +206,57 @@ def register_user():
         show_message("info", "Registration canceled.")
 
 
+def get_user_credentials():
+    username = Prompt.ask(" 👤 Please enter your username")
+    password = Prompt.ask(" 🔑 Please type in your password to continue", password=True)
+    return username, password
+
+
+def authenticate_user(username, password):
+    user = find_user(username)
+    if user and user["password"] == password:
+        return True
+    return False
+
+
+def handle_login_tries(max_tries=3):
+    remaining_tries = max_tries
+    while remaining_tries > 0:
+        console.clear()
+        show_banner()
+        console.print(Align.center("🔐 Sign in page \n"), style="bold")
+        username, password = get_user_credentials()
+        if authenticate_user(username, password):
+            return True
+        remaining_tries -= 1
+        message = (
+            "All attempts used. If you forgot your password, use the 'Reset Password'."
+            if remaining_tries == 0
+            else f"Invalid username or password, {remaining_tries} attempt(s) left! Please try again."
+        )
+        show_message("error", message)
+    return False
+
+
+def login_user():
+    if handle_login_tries():
+        return True
+    else:
+        return False
+
+
 def init():
     while True:
         user_choice = show_header("auth")
         if user_choice == "0":
             console.clear()
             return
+        elif user_choice == "1":
+            if login_user():
+                show_header()
+            else:
+                console.clear()
+                return
         elif user_choice == "2":
             register_user()
         else:
