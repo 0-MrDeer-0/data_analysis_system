@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "data-analysis-system"
+version = "0.1.0"
+description = "A Python data analysis system"
+authors = ["Mr.Deer"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+rich = "^13.9.4"
+
+
+[tool.poetry.group.dev.dependencies]
+pre-commit = "^4.0.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

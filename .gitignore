@@ -1,0 +1,13 @@
+# Ignore Python virtual environment directories
+.env
+.venv
+env/
+venv/
+ENV/
+
+# Ignore VS Code editor settings directory
+.vscode/
+
+# Ignore application data directories (e.g., generated or user-specific data)
+app/data_analysis
+app/user_data
