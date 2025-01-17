@@ -89,7 +89,7 @@ def show_message(type, message):
     input(" Press enter key to continue ...")
 
 
-def show_registration_progress(username, password, email):
+def show_process_progress(emoji, process_type, fields):
     table = Table(
         show_header=True,
         header_style="bold",
@@ -97,22 +97,28 @@ def show_registration_progress(username, password, email):
         pad_edge=True,
         style="dim grey70",
     )
+
     table.add_column("Field", justify="center")
     table.add_column("Value", justify="center")
     table.add_column("Status", justify="center")
-    table.add_row("👤 Username", str(username or "None"), "✅" if username else "❌")
-    table.add_row()
-    table.add_row(
-        "🔐 Password",
-        ("*" * len(password) if password else "None"),
-        "✅" if password else "❌",
-    )
-    table.add_row()
-    table.add_row("📧 Email", str(email or "None"), "✅" if email else "❌")
+
+    index = 0
+    for field, value in fields.items():
+        status = "✅" if value else "❌"
+        display_value = (
+            "*" * len(value)
+            if "password" in field.lower() and value
+            else (value or "None")
+        )
+        table.add_row(field, display_value, status)
+        if index < len(fields) - 1:
+            table.add_row()
+        index += 1
+
     console.clear()
     show_banner()
     aligned_table = Align.center(table, vertical="middle")
-    console.print(Align.center("📝 Registration Progress"), style="bold")
+    console.print(Align.center(f"{emoji} {process_type} Progress"), style="bold")
     console.print(aligned_table)
 
 
@@ -140,30 +146,62 @@ def save_user(username, password, email):
     write_json_file(users)
 
 
-def validate_username(username):
+def is_username_unique(username):
+    user = find_user(username)
+    return user is None
+
+
+def validate_username(
+    username,
+    min_length=3,
+    max_length=15,
+    check_valid_chars=True,
+    check_uniqueness=True,
+    check_length=True,
+):
     if not username:
         return "Username cannot be empty."
-    if " " in username:
-        return "Username cannot contain spaces."
-    if find_user(username):
+    if check_length and len(username) < min_length:
+        return f"Username must be at least {min_length} characters long."
+    if check_length and len(username) > max_length:
+        return f"Username cannot exceed {max_length} characters."
+    if check_valid_chars and not re.fullmatch("^[A-Za-z0-9_-]*$", username):
+        return "Username can only contain letters, numbers, underscores, hyphens."
+    if check_uniqueness and not is_username_unique(username):
         return "Username already exists. Please choose another one."
     return None
 
 
-def validate_password(password):
-    if len(password) < 8:
+def validate_password(
+    password, min_length=8, check_length=True, check_confirmation=True
+):
+    if not password:
+        return "Password cannot be empty."
+    if check_length and len(password) < min_length:
         return "Password must be at least 8 characters long."
-    if password != Prompt.ask(" 🔑 Confirm your password", password=True):
+    if check_confirmation and password != Prompt.ask(
+        " 🔑 Confirm your password", password=True
+    ):
         return "Passwords do not match."
     return None
 
 
-def validate_email(email):
+def is_email_unique(email):
+    users = read_json_file()
+    for user_data in users.values():
+        if user_data["email"] == email:
+            return False
+    return True
+
+
+def validate_email(email, check_valid_chars=True, check_uniqueness=True):
     email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not email:
         return "Email cannot be empty."
-    if not re.match(email_regex, email):
+    if check_valid_chars and not re.match(email_regex, email):
         return "Invalid email format. Please try again."
+    if check_uniqueness and not is_email_unique(email):
+        return "This email is already registered. Please use a different one."
     return None
 
 
@@ -177,39 +215,33 @@ def get_input_with_validation(prompt_text, validator, secure=False):
 
 
 def register_user():
-    username, password, email = None, None, None
-    while not username:
-        show_registration_progress(username, password, email)
-        username = get_input_with_validation(
+    fields = {"👤 Username": None, "🔐 Password": None, "📧 Email": None}
+    while not fields["👤 Username"]:
+        show_process_progress("📝", "Registration", fields)
+        fields["👤 Username"] = get_input_with_validation(
             " 👤 Please enter your desired username", validate_username
         )
-    while not password:
-        show_registration_progress(username, password, email)
-        password = get_input_with_validation(
+    while not fields["🔐 Password"]:
+        show_process_progress("📝", "Registration", fields)
+        fields["🔐 Password"] = get_input_with_validation(
             " 🔑 Enter a secure password [#FFA500](at least 8 characters)[/#FFA500]",
             validate_password,
             secure=True,
         )
-    while not email:
-        show_registration_progress(username, password, email)
-        email = get_input_with_validation(
+    while not fields["📧 Email"]:
+        show_process_progress("📝", "Registration", fields)
+        fields["📧 Email"] = get_input_with_validation(
             " 📧 Enter your email address", validate_email
         )
-    show_registration_progress(username, password, email)
+    show_process_progress("📝", "Registration", fields)
     confirmation = Prompt.ask(
         " 🤝 Do you want to proceed with the registration?", choices=["yes", "no"]
     )
     if confirmation == "yes":
-        save_user(username, password, email)
+        save_user(fields["👤 Username"], fields["🔐 Password"], fields["📧 Email"])
         show_message("success", "User registered successfully!")
     else:
         show_message("info", "Registration canceled.")
-
-
-def get_user_credentials():
-    username = Prompt.ask(" 👤 Please enter your username")
-    password = Prompt.ask(" 🔑 Please type in your password to continue", password=True)
-    return username, password
 
 
 def authenticate_user(username, password):
@@ -222,24 +254,48 @@ def authenticate_user(username, password):
 def handle_login_tries(max_tries=3):
     remaining_tries = max_tries
     while remaining_tries > 0:
-        console.clear()
-        show_banner()
-        console.print(Align.center("🔐 Sign in page \n"), style="bold")
-        username, password = get_user_credentials()
-        if authenticate_user(username, password):
+        fields = {"👤 Username": None, "🔐 Password": None}
+        while not fields["👤 Username"]:
+            show_process_progress("🔐", "Sign in", fields)
+            fields["👤 Username"] = get_input_with_validation(
+                " 👤 Please enter your username",
+                lambda username: validate_username(
+                    username,
+                    check_length=False,
+                    check_uniqueness=False,
+                    check_valid_chars=False,
+                ),
+            )
+        while not fields["🔐 Password"]:
+            show_process_progress("📝", "Registration", fields)
+            fields["🔐 Password"] = get_input_with_validation(
+                " 🔑 Enter your password to continue",
+                lambda password: validate_password(
+                    password, check_length=False, check_confirmation=False
+                ),
+                secure=True,
+            )
+        if authenticate_user(fields["👤 Username"], fields["🔐 Password"]):
+            show_process_progress("🔐", "Sign in", fields)
             return True
-        remaining_tries -= 1
-        message = (
-            "All attempts used. If you forgot your password, use the 'Reset Password'."
-            if remaining_tries == 0
-            else f"Invalid username or password, {remaining_tries} attempt(s) left! Please try again."
-        )
-        show_message("error", message)
+        else:
+            remaining_tries -= 1
+            show_process_progress("🔐", "Sign in", fields)
+            message = (
+                "All attempts used. If you forgot your password, use the 'Reset Password'."
+                if remaining_tries == 0
+                else f"Invalid username or password, {remaining_tries} attempt(s) left! Please try again."
+            )
+            show_message("error", message)
     return False
 
 
 def login_user():
     if handle_login_tries():
+        show_message(
+            "success",
+            "Welcome back! You have successfully logged in.",
+        )
         return True
     else:
         return False
