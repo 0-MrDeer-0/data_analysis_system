@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import random
 
 from rich.console import Console
 from rich.align import Align
@@ -135,20 +136,39 @@ def read_json_file():
         return json.load(file)
 
 
-def find_user(username):
+def find_user(lookup_key, lookup_value):
     users = read_json_file()
-    return users.get(username, None)
+    for details in users.values():
+        if details[lookup_key] == lookup_value:
+            return details
+    return None
 
 
 def save_user(username, password, email):
     users = read_json_file()
-    users[username] = {"password": password, "email": email}
+    users[username] = {"username": username, "password": password, "email": email}
     write_json_file(users)
 
 
+def update_user_data(lookup_key, lookup_value, update_key, new_value):
+    users = read_json_file()
+    for user_data in users.values():
+        if user_data[lookup_key] == lookup_value:
+            user_data[update_key] = new_value
+            break
+    write_json_file(users)
+    show_message("success", f"Your {update_key} has been successfully updated!")
+
+
 def is_username_unique(username):
-    user = find_user(username)
+    user = find_user("username", username)
     return user is None
+
+
+def validate_non_empty(value):
+    if not value:
+        return "This field cannot be empty."
+    return None
 
 
 def validate_username(
@@ -245,7 +265,7 @@ def register_user():
 
 
 def authenticate_user(username, password):
-    user = find_user(username)
+    user = find_user("username", username)
     if user and user["password"] == password:
         return True
     return False
@@ -301,6 +321,89 @@ def login_user():
         return False
 
 
+def generate_random_code(length=6):
+    characters = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*!"
+    )
+    return "".join(random.choice(characters) for _ in range(length))
+
+
+def mock_send_verification_email(email, username, random_code):
+    email_massage = f"""
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>♻️ Reset account password</title>
+            <script src="https://cdn.tailwindcss.com"></script>
+        </head>
+        <body class="bg-neutral-100 text-[#242424] text-lg">
+            <main class="container px-12 py-16 text-center space-y-16 mx-auto">
+                <p class="text-8xl">👀</p>
+                <h2 class="text-6xl font-semibold">Password reset</h2>
+                <div class="bg-white rounded-md space-y-4 py-16 px-20 shadow-lg">
+                    <p class="font-bold text-3xl">Hi {username}, Someone requested that the password be reset for the following account</p>
+                    <p>To proceed, please copy the following verification code by clicking the button below and paste it in the app to reset your password:</p>
+                    <button class="bg-[#3b82f6] text-white py-4 px-8 rounded-lg">{random_code}</button>
+                    <p>Your email: <span class="text-[#3b82f6]">{email}</span> </p>
+                    <p>if this was a mistake. just ignore this email and nothing will happen.</p>
+                </div>
+            </main>
+            <script>const btnCopyCode = document.querySelector("button");btnCopyCode.addEventListener("click", () =>navigator.clipboard.writeText(btnCopyCode.textContent))</script>
+        </body>
+        </html>
+    """
+    file_name = f"{email}.html"
+    file_path = os.path.join(BASE_DIR, "verification_files", file_name)
+    if not os.path.exists(f"{BASE_DIR}/verification_files"):
+        os.makedirs(f"{BASE_DIR}/verification_files")
+    with open(file_path, "w") as file:
+        file.write(email_massage)
+
+
+def reset_password():
+    fields = {"📧 Email": None, "📩 Confrim Code": None, "🔐 New Password": None}
+    while not fields["📧 Email"]:
+        show_process_progress("♻️ ", "Reset Password", fields)
+        fields["📧 Email"] = get_input_with_validation(
+            " 📧 Enter your registered email for reset code",
+            lambda email: validate_email(email, check_uniqueness=False),
+        )
+    user = find_user("email", fields["📧 Email"])
+    if not user:
+        show_process_progress("♻️ ", "Reset Password", fields)
+        show_message(
+            "error",
+            "This email is not registered with us. Please enter a valid registered email.",
+        )
+        return
+    else:
+        confrim_code = generate_random_code()
+        mock_send_verification_email(user["email"], user["username"], confrim_code)
+        while not fields["📩 Confrim Code"]:
+            show_process_progress("♻️ ", "Reset Password", fields)
+            fields["📩 Confrim Code"] = get_input_with_validation(
+                " 📩 Enter the confrim code sent to your email in 'verification_files' folder",
+                validate_non_empty,
+            )
+        if confrim_code == fields["📩 Confrim Code"]:
+            while not fields["🔐 New Password"]:
+                show_process_progress("♻️ ", "Reset Password", fields)
+                fields["🔐 New Password"] = get_input_with_validation(
+                    " 🔑 Set a new password for your account", validate_password, True
+                )
+            show_process_progress("♻️ ", "Reset Password", fields)
+            update_user_data(
+                "email", fields["📧 Email"], "password", fields["🔐 New Password"]
+            )
+        else:
+            show_message(
+                "error",
+                "The code is incorrect or expired. Please request a new reset code.",
+            )
+
+
 def init():
     while True:
         user_choice = show_header("auth")
@@ -315,6 +418,8 @@ def init():
                 return
         elif user_choice == "2":
             register_user()
+        elif user_choice == "3":
+            reset_password()
         else:
             show_message("error", "Your choice not found!")
 
