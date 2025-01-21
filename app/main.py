@@ -1,7 +1,11 @@
+# ------ Standard Library Imports ------
+
 import json
 import os
 import re
 import random
+
+# ------ Third-Party Library Imports ------
 
 from rich.console import Console
 from rich.align import Align
@@ -10,10 +14,26 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.box import ROUNDED
 
+# ------ Initializing Console for Rich Output ------
+
 console = Console()
+
+# ------ Defining Constants ------
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 USERS_JSON_FILE_PATH = os.path.join(BASE_DIR, "user_data", "users.json")
+
+# ------ Helper Functions ------
+
+
+def generate_random_code(length=6):
+    characters = (
+        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*!"
+    )
+    return "".join(random.choice(characters) for _ in range(length))
+
+
+# ------ Functions for Displaying Visual Elements ------
 
 
 def show_banner():
@@ -123,9 +143,7 @@ def show_process_progress(emoji, process_type, fields):
     console.print(aligned_table)
 
 
-def write_json_file(data):
-    with open(USERS_JSON_FILE_PATH, "w") as file:
-        json.dump(data, file, indent=4)
+# ------ Functions to Manage User Data in users.json ------
 
 
 def read_json_file():
@@ -134,6 +152,11 @@ def read_json_file():
             json.dump({}, file)
     with open(USERS_JSON_FILE_PATH, "r") as file:
         return json.load(file)
+
+
+def write_json_file(data):
+    with open(USERS_JSON_FILE_PATH, "w") as file:
+        json.dump(data, file, indent=4)
 
 
 def find_user(lookup_key, lookup_value):
@@ -160,9 +183,20 @@ def update_user_data(lookup_key, lookup_value, update_key, new_value):
     show_message("success", f"Your {update_key} has been successfully updated!")
 
 
+# ------ Validation Functions for User Input ------
+
+
 def is_username_unique(username):
     user = find_user("username", username)
     return user is None
+
+
+def is_email_unique(email):
+    users = read_json_file()
+    for user_data in users.values():
+        if user_data["email"] == email:
+            return False
+    return True
 
 
 def validate_non_empty(value):
@@ -206,14 +240,6 @@ def validate_password(
     return None
 
 
-def is_email_unique(email):
-    users = read_json_file()
-    for user_data in users.values():
-        if user_data["email"] == email:
-            return False
-    return True
-
-
 def validate_email(email, check_valid_chars=True, check_uniqueness=True):
     email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
     if not email:
@@ -232,6 +258,9 @@ def get_input_with_validation(prompt_text, validator, secure=False):
         show_message("error", error)
     else:
         return value
+
+
+# ------ User Registration Logic ------
 
 
 def register_user():
@@ -262,6 +291,9 @@ def register_user():
         show_message("success", "User registered successfully!")
     else:
         show_message("info", "Registration canceled.")
+
+
+# ------ Authentication and Login Functions ------
 
 
 def authenticate_user(username, password):
@@ -321,11 +353,7 @@ def login_user():
         return False
 
 
-def generate_random_code(length=6):
-    characters = (
-        "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*!"
-    )
-    return "".join(random.choice(characters) for _ in range(length))
+# ------ Password Reset Process with Email Verification ------
 
 
 def mock_send_verification_email(email, username, random_code):
@@ -402,6 +430,9 @@ def reset_password():
                 "error",
                 "The code is incorrect or expired. Please request a new reset code.",
             )
+
+
+# ------ Main Entry Point for Program Execution ------
 
 
 def init():
