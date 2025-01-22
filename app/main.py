@@ -4,6 +4,7 @@ import json
 import os
 import re
 import random
+import hashlib
 
 # ------ Third-Party Library Imports ------
 
@@ -31,6 +32,10 @@ def generate_random_code(length=6):
         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%^&*!"
     )
     return "".join(random.choice(characters) for _ in range(length))
+
+
+def hash_data(data):
+    return hashlib.sha256(data.encode("utf-8")).hexdigest()
 
 
 # ------ Functions for Displaying Visual Elements ------
@@ -169,14 +174,21 @@ def find_user(lookup_key, lookup_value):
 
 def save_user(username, password, email):
     users = read_json_file()
-    users[username] = {"username": username, "password": password, "email": email}
+    hashed_password = hash_data(password)
+    users[username] = {
+        "username": username,
+        "password": hashed_password,
+        "email": email,
+    }
     write_json_file(users)
 
 
-def update_user_data(lookup_key, lookup_value, update_key, new_value):
+def update_user_data(lookup_key, lookup_value, update_key, new_value, hash_value=False):
     users = read_json_file()
     for user_data in users.values():
         if user_data[lookup_key] == lookup_value:
+            if hash_value:
+                new_value = hash_data(new_value)
             user_data[update_key] = new_value
             break
     write_json_file(users)
@@ -298,8 +310,10 @@ def register_user():
 
 def authenticate_user(username, password):
     user = find_user("username", username)
-    if user and user["password"] == password:
-        return True
+    if user:
+        hashed_password = hash_data(password)
+        if user["password"] == hashed_password:
+            return True
     return False
 
 
@@ -423,7 +437,7 @@ def reset_password():
                 )
             show_process_progress("♻️ ", "Reset Password", fields)
             update_user_data(
-                "email", fields["📧 Email"], "password", fields["🔐 New Password"]
+                "email", fields["📧 Email"], "password", fields["🔐 New Password"], True
             )
         else:
             show_message(
