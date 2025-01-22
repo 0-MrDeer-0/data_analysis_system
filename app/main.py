@@ -372,7 +372,7 @@ def login_user():
 
 def mock_send_verification_email(email, username, random_code):
     email_massage = f"""
-        <!DOCTYPE html>
+    <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
@@ -380,19 +380,36 @@ def mock_send_verification_email(email, username, random_code):
             <title>♻️ Reset account password</title>
             <script src="https://cdn.tailwindcss.com"></script>
         </head>
-        <body class="bg-neutral-100 text-[#242424] text-lg">
-            <main class="container px-12 py-16 text-center space-y-16 mx-auto">
+        <body class="bg-[#f0f8ff] text-[#242424]">
+            <main class="container px-12 pt-5 text-center space-y-8 mx-auto">
                 <p class="text-8xl">👀</p>
-                <h2 class="text-6xl font-semibold">Password reset</h2>
-                <div class="bg-white rounded-md space-y-4 py-16 px-20 shadow-lg">
-                    <p class="font-bold text-3xl">Hi {username}, Someone requested that the password be reset for the following account</p>
+                <h2 class="text-5xl font-semibold">Password reset</h2>
+                <div class="bg-white rounded-md space-y-4 py-12 px-20 shadow-lg">
+                    <p class="font-bold text-2xl">Hi {username}, Someone requested that the password be reset for the following account</p>
                     <p>To proceed, please copy the following verification code by clicking the button below and paste it in the app to reset your password:</p>
-                    <button class="bg-[#3b82f6] text-white py-4 px-8 rounded-lg">{random_code}</button>
+                    <button id="btn_copy_code" class="bg-[#3498db] shadow-md hover:bg-[#5dade2] hover:scale-105 hover:shadow-lg active:bg-[#2e86c1] active:scale-100 active:shadow-sm text-white py-4 px-8 rounded-lg transition-all">{random_code}</button>
                     <p>Your email: <span class="text-[#3b82f6]">{email}</span> </p>
                     <p>if this was a mistake. just ignore this email and nothing will happen.</p>
                 </div>
+                <div id="card_message" class="invisible opacity-0 fixed bottom-2 left-2 margin-auto bg-[#4caf50] text-white p-3 flex items-center gap-2 rounded-lg transition-all">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-8">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 0 1-1.043 3.296 3.745 3.745 0 0 1-3.296 1.043A3.745 3.745 0 0 1 12 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 0 1-3.296-1.043 3.745 3.745 0 0 1-1.043-3.296A3.745 3.745 0 0 1 3 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 0 1 1.043-3.296 3.746 3.746 0 0 1 3.296-1.043A3.746 3.746 0 0 1 12 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 0 1 3.296 1.043 3.746 3.746 0 0 1 1.043 3.296A3.745 3.745 0 0 1 21 12Z" />
+                    </svg>
+                    Your verification code has been copied. Please paste it in the required field to proceed.
+                </div>
             </main>
-            <script>const btnCopyCode = document.querySelector("button");btnCopyCode.addEventListener("click", () =>navigator.clipboard.writeText(btnCopyCode.textContent))</script>
+            <script>
+                const btnCopyCode = document.getElementById("btn_copy_code");
+                const cardMessage = document.getElementById("card_message");
+                btnCopyCode.addEventListener("click", () => {{
+                navigator.clipboard.writeText(btnCopyCode.textContent);
+                cardMessage.classList.remove("invisible" , "opacity-0");
+                setTimeout(() => {{
+                    cardMessage.classList.add("invisible", "opacity-0");
+                    }} , 2000)
+                }}
+                );
+            </script>
         </body>
         </html>
     """
