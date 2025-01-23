@@ -9,6 +9,6 @@ ENV/
 .vscode/
 
 # Ignore application data directories (e.g., generated or user-specific data)
-app/data_analysis
-app/user_data
-app/verification_files
+app/csv_data
+app/users_data
+app/password_reset_emails

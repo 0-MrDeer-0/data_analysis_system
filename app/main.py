@@ -21,8 +21,43 @@ console = Console()
 
 # ------ Defining Constants ------
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-USERS_JSON_FILE_PATH = os.path.join(BASE_DIR, "user_data", "users.json")
+
+USER_DATA_DIR = os.path.join(BASE_DIR, "users_data")
+USERS_JSON_FILE = os.path.join(USER_DATA_DIR, "users.json")
+
+PASSWORD_RESET_EMAILS_DIR = os.path.join(BASE_DIR, "password_reset_emails")
+
+CSV_DATA_DIR = os.path.join(BASE_DIR, "csv_data")
+ANALYSIS_DATA_FILE = os.path.join(CSV_DATA_DIR, "analysis_data.csv")
+
+
+# ------ Directory and File Setup Functions ------
+
+
+def create_directorie(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+
+def create_file(file_path, file_type):
+    if not os.path.exists(file_path):
+        if file_type == "json":
+            with open(file_path, "w") as file:
+                json.dump({}, file)
+        elif file_type == "csv":
+            with open(file_type, "w") as file:
+                file.write("id,name,gender,age\n")
+        else:
+            with open(file_path, "w") as file:
+                pass
+
+
+def create_directories_and_files(directory_path, file_path, file_type):
+    create_directorie(directory_path)
+    create_file(file_path, file_type)
+
 
 # ------ Helper Functions ------
 
@@ -152,15 +187,14 @@ def show_process_progress(emoji, process_type, fields):
 
 
 def read_json_file():
-    if not os.path.exists(USERS_JSON_FILE_PATH):
-        with open(USERS_JSON_FILE_PATH, "w") as file:
-            json.dump({}, file)
-    with open(USERS_JSON_FILE_PATH, "r") as file:
+    create_directories_and_files(USER_DATA_DIR, USERS_JSON_FILE, "json")
+    with open(USERS_JSON_FILE, "r") as file:
         return json.load(file)
 
 
 def write_json_file(data):
-    with open(USERS_JSON_FILE_PATH, "w") as file:
+    create_directories_and_files(USER_DATA_DIR, USERS_JSON_FILE, "json")
+    with open(USERS_JSON_FILE, "w") as file:
         json.dump(data, file, indent=4)
 
 
@@ -414,9 +448,8 @@ def mock_send_verification_email(email, username, random_code):
         </html>
     """
     file_name = f"{email}.html"
-    file_path = os.path.join(BASE_DIR, "verification_files", file_name)
-    if not os.path.exists(f"{BASE_DIR}/verification_files"):
-        os.makedirs(f"{BASE_DIR}/verification_files")
+    file_path = os.path.join(PASSWORD_RESET_EMAILS_DIR , file_name)
+    create_directorie(PASSWORD_RESET_EMAILS_DIR)
     with open(file_path, "w") as file:
         file.write(email_massage)
 
@@ -443,7 +476,7 @@ def reset_password():
         while not fields["📩 Confrim Code"]:
             show_process_progress("♻️ ", "Reset Password", fields)
             fields["📩 Confrim Code"] = get_input_with_validation(
-                " 📩 Enter the confrim code sent to your email in 'verification_files' folder",
+                " 📩 Enter the confrim code sent to your email in 'password_reset_emails' folder",
                 validate_non_empty,
             )
         if confrim_code == fields["📩 Confrim Code"]:
