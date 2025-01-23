@@ -161,7 +161,7 @@ def show_process_progress(emoji, process_type, fields):
 
     table.add_column("Field", justify="center")
     table.add_column("Value", justify="center")
-    table.add_column("Status", justify="center")
+    table.add_column("Entered", justify="center")
 
     index = 0
     for field, value in fields.items():
