@@ -5,6 +5,7 @@ import os
 import re
 import random
 import hashlib
+import csv
 
 # ------ Third-Party Library Imports ------
 
@@ -131,6 +132,14 @@ def show_menu(menu_name="user_actions"):
             ],
             "title": "Data Management Menu",
         },
+        "data_modification": {
+            "items": [
+                "[1] ✏️  Add data",
+                "[2] 🗑️  Delete data",
+                "[0] 🔙 Back to Main Menu",
+            ],
+            "title": "Update Data Menu",
+        },
     }
     menu_data = menus.get(menu_name, {})
     menu_items = menu_data.get("items", [])
@@ -229,6 +238,68 @@ def update_user_data(lookup_key, lookup_value, update_key, new_value, hash_value
     show_message("success", f"Your {update_key} has been successfully updated!")
 
 
+# ------ Functions to Manage csv data in analysis_data.csv ------
+
+
+def read_csv_file():
+    create_directories_and_files(CSV_DATA_DIR, ANALYSIS_DATA_FILE, "csv")
+    with open(ANALYSIS_DATA_FILE, mode="r", newline="") as file:
+        reader = csv.reader(file)
+        rows = [row for row in reader if row]
+    return rows
+
+
+def write_csv_file(data):
+    create_directorie(CSV_DATA_DIR)
+    with open(ANALYSIS_DATA_FILE, mode="w", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        for row in data:
+            writer.writerow(row)
+
+
+def generate_new_id(target_id):
+    rows = read_csv_file()
+    largest_id = int(rows[-1][0])
+    if target_id == 1:
+        return 1
+    elif target_id == largest_id:
+        return largest_id + 1
+    else:
+        if largest_id >= target_id:
+            return target_id
+        else:
+            return largest_id + 1
+
+
+def update_ids(update_from, rows):
+    if update_from < len(rows):
+        field_index = update_from
+        for row in rows[update_from:]:
+            row[0] = str(field_index)
+            field_index += 1
+    return rows
+
+
+def append_or_insert_row(insert_index, row):
+    rows = read_csv_file()
+    rows.insert(insert_index, row)
+    rows = update_ids(insert_index, rows)
+    write_csv_file(rows)
+
+
+def map_position_to_id(position, action):
+    rows = read_csv_file()
+    max_id = int(rows[-1][0])
+    if position == "start":
+        return 1
+    elif position == "end":
+        if action == "add":
+            return max_id + 1
+        else:
+            return max_id
+    return int(position)
+
+
 # ------ Validation Functions for User Input ------
 
 
@@ -243,6 +314,14 @@ def is_email_unique(email):
         if user_data["email"] == email:
             return False
     return True
+
+
+def is_numeric(value):
+    try:
+        float(value)
+        return None
+    except ValueError:
+        return "Input must be a valid number."
 
 
 def validate_non_empty(value):
@@ -295,6 +374,34 @@ def validate_email(email, check_valid_chars=True, check_uniqueness=True):
     if check_uniqueness and not is_email_unique(email):
         return "This email is already registered. Please use a different one."
     return None
+
+
+def validate_person_name(name):
+    person_name_regex = r"^[A-Za-z ]+$"
+    if error := validate_non_empty(name):
+        return error
+    if not re.match(person_name_regex, name):
+        return "Name should only contain letters and spaces."
+    return None
+
+
+def validate_gender(gender):
+    if error := validate_non_empty(gender):
+        return error
+    options = ["male", "female", "other"]
+    if gender not in options:
+        return f"Invalid gender. Please enter one of the {', '.join(options)}."
+    return None
+
+
+def validate_id(value, action):
+    rows = read_csv_file()
+    if error := validate_non_empty(value):
+        return error
+    if value != "start" and value != "end" and not value.isdigit():
+        return "Position must be either 'start', 'end', or a valid ID field."
+    if action != "add" and value.isdigit() and value > rows[-1][0]:
+        return f"Id {value} is greater than the largest existing id, which is {rows[-1][0]}."
 
 
 def get_input_with_validation(prompt_text, validator, secure=False):
@@ -496,24 +603,90 @@ def reset_password():
             )
 
 
+# ------ Add data process ------
+
+
+def add_data_process():
+    fields = {
+        "🆔 Id": "Auto generate",
+        "👤 Name": None,
+        "🚻 Gender": None,
+        "⏳ Age": None,
+    }
+    target = None
+    while not fields["👤 Name"]:
+        show_process_progress("✍️", "Update Data Progress", fields)
+        fields["👤 Name"] = get_input_with_validation(
+            " 👤 Please enter the person's full name", validate_person_name
+        )
+    while not fields["🚻 Gender"]:
+        show_process_progress("✍️", "Update Data Progress", fields)
+        fields["🚻 Gender"] = get_input_with_validation(
+            " 🚻 Enter the gender of the person [male , female , other]",
+            validate_gender,
+        )
+    while not fields["⏳ Age"]:
+        show_process_progress("✍️", "Update Data Progress", fields)
+        fields["⏳ Age"] = get_input_with_validation(
+            " ⏳ Enter the person's age", is_numeric
+        )
+    while not target:
+        show_process_progress("✍️", "Update Data Progress", fields)
+        target = get_input_with_validation(
+            f" 🆔 Please specify the position where you would add data ['start', 'end', or a specific row number]",
+            lambda value: validate_id(value, action="add"),
+        )
+    target_id = map_position_to_id(target, "add")
+    fields["🆔 Id"] = str(generate_new_id(target_id))
+    show_process_progress("✍️", "Update Data Progress", fields)
+    confirmation = Prompt.ask(
+        "🤝 Do you confirm to proceed with adding these details?", choices=["yes", "no"]
+    )
+    if confirmation == "yes":
+        new_row = [
+            fields["🆔 Id"],
+            fields["👤 Name"],
+            fields["🚻 Gender"],
+            fields["⏳ Age"],
+        ]
+        append_or_insert_row(target_id, new_row)
+        show_message("success", "Data has been successfully added to the file!")
+    else:
+        show_message("info", "Data entry has been canceled. No changes were made.")
+
+
 # ------ Main Entry Point for Program Execution ------
 
 
 def init():
     while True:
-        user_choice = show_header("auth")
-        if user_choice == "0":
+        auth_choice = show_header("auth")
+        if auth_choice == "0":
             console.clear()
             return
-        elif user_choice == "1":
+        elif auth_choice == "1":
             if login_user():
-                show_header()
+                while True:
+                    post_login_choice = show_header()
+                    if post_login_choice == "0":
+                        break
+                    elif post_login_choice == "1":
+                        while True:
+                            data_modification_choice = show_header("data_modification")
+                            if data_modification_choice == "0":
+                                break
+                            elif data_modification_choice == "1":
+                                add_data_process()
+                            else:
+                                show_message("error", "Your choice not found!")
+                    else:
+                        show_message("error", "Your choice not found!")
             else:
                 console.clear()
                 return
-        elif user_choice == "2":
+        elif auth_choice == "2":
             register_user()
-        elif user_choice == "3":
+        elif auth_choice == "3":
             reset_password()
         else:
             show_message("error", "Your choice not found!")
