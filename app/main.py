@@ -76,7 +76,7 @@ def hash_data(data):
 # ------ Functions for Displaying Visual Elements ------
 
 
-def create_and_display_table(title, show_header, headers, data):
+def create_and_display_table(title, show_header, headers, data, padding=(0, 1)):
     table = Table(
         title=title,
         title_style="bold",
@@ -86,6 +86,7 @@ def create_and_display_table(title, show_header, headers, data):
         box=ROUNDED,
         pad_edge=True,
         style="dim grey70",
+        padding=padding,
     )
     if show_header:
         for header in headers:
@@ -436,6 +437,8 @@ def validate_id(value, action):
         return error
     if value != "start" and value != "end" and not value.isdigit():
         return "Position must be either 'start', 'end', or a valid ID field."
+    if value.isdigit() and int(value) < 1:
+        return "ID must be a positive integer greater than 0."
     if action != "add" and value.isdigit() and int(value) >= largest_id:
         return f"Id {value} is greater than the largest existing id, which is {rows[-1][0]}."
 
@@ -720,6 +723,47 @@ def remove_data_proess():
             show_message("info", "Deletion cancelled. No changes were made.")
 
 
+# ------ Display csv data functions ------
+
+
+def display_rows_between_ids(start_id, end_id):
+    rows = read_csv_file()
+    data = rows[1:]
+    filtered_rows = data[start_id - 1 : end_id]
+    create_and_display_table(
+        "🗓️  Rows Displayed Between Given IDs",
+        True,
+        ["🆔 Id", "👤 Name", "🚻 Gender", "⏳ Age"],
+        filtered_rows,
+        padding=(0, 3),
+    )
+    show_message("success", "Your data has been successfully displayed.")
+
+
+def display_data_proess():
+    fields = {"🔽 Start": None, "🔼 End": None}
+    show_process_progress("🆔", "Specifying IDs", fields)
+    is_range_correct = False
+    start_id = end_id = None
+    while not is_range_correct:
+        while not fields["🔽 Start"]:
+            show_process_progress("🆔", "Specifying IDs", fields)
+            fields["🔽 Start"] = get_input_with_validation(
+                " 🔽 Please specify the position where you would start displaying data ['start', 'end', or a specific row number]",
+                lambda value: validate_id(value, action="find"),
+            )
+        while not fields["🔼 End"]:
+            show_process_progress("🆔", "Specifying IDs", fields)
+            fields["🔼 End"] = get_input_with_validation(
+                " 🔽 Please specify the position where you would end displaying data ['start', 'end', or a specific row number]",
+                lambda value: validate_id(value, action="find"),
+            )
+        start_id = map_position_to_id(fields["🔽 Start"], "find")
+        end_id = map_position_to_id(fields["🔼 End"], "find")
+        is_range_correct = True if start_id < end_id else False
+    display_rows_between_ids(start_id, end_id)
+
+
 # ------ Main Entry Point for Program Execution ------
 
 
@@ -746,8 +790,8 @@ def init():
                                 remove_data_proess()
                             else:
                                 show_message("error", "Your choice not found!")
-                    else:
-                        show_message("error", "Your choice not found!")
+                    elif post_login_choice == "2":
+                        display_data_proess()
             else:
                 console.clear()
                 return
