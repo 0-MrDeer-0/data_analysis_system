@@ -312,7 +312,6 @@ def find_rows_by_header(value, header="id", limit=1):
         return None
     header_index = headers.index(header)
     matching_rows = []
-    input(header_index)
     for row in rows[1:]:
         if row[header_index] == str(value):
             matching_rows.append(row)
@@ -324,6 +323,16 @@ def find_rows_by_header(value, header="id", limit=1):
     if limit == 1:
         return matching_rows[0]
     return matching_rows
+
+
+def remove_row(row_to_delete):
+    rows = read_csv_file()
+    filtered_rows = []
+    for row in rows:
+        if row != row_to_delete:
+            filtered_rows.append(row)
+    update_ids(int(row_to_delete[0]), filtered_rows)
+    write_csv_file(filtered_rows)
 
 
 # ------ Validation Functions for User Input ------
@@ -733,6 +742,8 @@ def init():
                                 break
                             elif data_modification_choice == "1":
                                 add_data_process()
+                            elif data_modification_choice == "2":
+                                remove_data_proess()
                             else:
                                 show_message("error", "Your choice not found!")
                     else:
