@@ -9,7 +9,6 @@ import hashlib
 # ------ Third-Party Library Imports ------
 
 from rich.console import Console
-from rich.align import Align
 from rich.table import Table
 from rich.panel import Panel
 from rich.prompt import Prompt
@@ -76,15 +75,39 @@ def hash_data(data):
 # ------ Functions for Displaying Visual Elements ------
 
 
+def create_and_display_table(title, show_header, headers, data):
+    table = Table(
+        title=title,
+        title_style="bold",
+        show_header=show_header,
+        header_style="bold",
+        expand=False,
+        box=ROUNDED,
+        pad_edge=True,
+        style="dim grey70",
+    )
+    if show_header:
+        for header in headers:
+            table.add_column(header, justify="center")
+    if not isinstance(data[0], list):
+        data = [data]
+    for row in data:
+        table.add_row(*row)
+        if not row == data[-1]:
+            table.add_row()
+    show_banner()
+    console.print(table, justify="center")
+
+
 def show_banner():
-    banner = """ ____                 ____  _        _   
+    banner = """___                 ____  _        _   
 |  _ \  ___  ___ _ __/ ___|| |_ __ _| |_ 
 | | | || _ \| _ \ '__\___ \| __/ _` | __|
 | |_| |  __/  __/ |   ___) | || (_| | |_ 
 |____/ \___|\___|_|  |____/ \__\__,_|\__|
 """
-    centered_banner = Align.center(banner, vertical="middle")
-    console.print(centered_banner, style="bold green")
+    console.clear()
+    console.print(banner, style="bold green", justify="center")
 
 
 def show_menu(menu_name="user_actions"):
@@ -94,37 +117,32 @@ def show_menu(menu_name="user_actions"):
                 "[1] 🔐 Sign in",
                 "[2] 📝 Sign up",
                 "[3] ♻️  Reset password",
-                "[0]🚪 Exit",
+                "[0] 🚪 Exit",
             ],
-            "header": "User Authentication Menu",
+            "title": "User Authentication Menu",
         },
         "user_actions": {
             "items": [
-                "[1] 📋 Display data",
-                "[2] 📊 Statistical analysis",
-                "[3] 🔎 Data search",
-                "[0]🚪 Exit",
+                "[1] ✍️  Update data",
+                "[2] 📋 Display data",
+                "[3] 📊 Analysis",
+                "[4] 🔎 Search",
+                "[0] 🚪 Log out",
             ],
-            "header": "Data Management Menu",
+            "title": "Data Management Menu",
         },
     }
     menu_data = menus.get(menu_name, {})
     menu_items = menu_data.get("items", [])
-    header_menu = menu_data.get("header", "Menu")
+    title = menu_data.get("title", "Menu")
     if not menu_items:
         show_message("error", "Menu not found!")
         return None
-    console.print(Align.center(header_menu, style="bold"))
-    table = Table(
-        show_header=False, expand=False, box=ROUNDED, pad_edge=True, style="dim grey70"
-    )
-    table.add_row(*menu_items)
-    console.print(Align.center(table, vertical="middle"))
+    create_and_display_table(title, False, None, menu_items)
     return input("\n 🛎️  Enter your number choice: [ ]\033[12;32H")
 
 
 def show_header(menu_name="user_actions"):
-    console.clear()
     show_banner()
     choice = show_menu(menu_name)
     return choice
@@ -151,19 +169,9 @@ def show_message(type, message):
 
 
 def show_process_progress(emoji, process_type, fields):
-    table = Table(
-        show_header=True,
-        header_style="bold",
-        box=ROUNDED,
-        pad_edge=True,
-        style="dim grey70",
-    )
-
-    table.add_column("Field", justify="center")
-    table.add_column("Value", justify="center")
-    table.add_column("Entered", justify="center")
-
-    index = 0
+    title = f"{emoji}  {process_type} Progress"
+    headers = ["Field", "Value", "Entered"]
+    table_items = []
     for field, value in fields.items():
         status = "✅" if value else "❌"
         display_value = (
@@ -171,16 +179,8 @@ def show_process_progress(emoji, process_type, fields):
             if "password" in field.lower() and value
             else (value or "None")
         )
-        table.add_row(field, display_value, status)
-        if index < len(fields) - 1:
-            table.add_row()
-        index += 1
-
-    console.clear()
-    show_banner()
-    aligned_table = Align.center(table, vertical="middle")
-    console.print(Align.center(f"{emoji} {process_type} Progress"), style="bold")
-    console.print(aligned_table)
+        table_items.append([field, display_value, status])
+    create_and_display_table(title, True, headers, table_items)
 
 
 # ------ Functions to Manage User Data in users.json ------
@@ -448,7 +448,7 @@ def mock_send_verification_email(email, username, random_code):
         </html>
     """
     file_name = f"{email}.html"
-    file_path = os.path.join(PASSWORD_RESET_EMAILS_DIR , file_name)
+    file_path = os.path.join(PASSWORD_RESET_EMAILS_DIR, file_name)
     create_directorie(PASSWORD_RESET_EMAILS_DIR)
     with open(file_path, "w") as file:
         file.write(email_massage)
