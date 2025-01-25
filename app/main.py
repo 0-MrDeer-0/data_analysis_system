@@ -396,11 +396,12 @@ def validate_gender(gender):
 
 def validate_id(value, action):
     rows = read_csv_file()
+    largest_id = int(rows[-1][0])
     if error := validate_non_empty(value):
         return error
     if value != "start" and value != "end" and not value.isdigit():
         return "Position must be either 'start', 'end', or a valid ID field."
-    if action != "add" and value.isdigit() and value > rows[-1][0]:
+    if action != "add" and value.isdigit() and int(value) >= largest_id:
         return f"Id {value} is greater than the largest existing id, which is {rows[-1][0]}."
 
 
