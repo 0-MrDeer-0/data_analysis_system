@@ -259,8 +259,8 @@ def validate_username(
     check_uniqueness=True,
     check_length=True,
 ):
-    if not username:
-        return "Username cannot be empty."
+    if error := validate_non_empty(username):
+        return error
     if check_length and len(username) < min_length:
         return f"Username must be at least {min_length} characters long."
     if check_length and len(username) > max_length:
@@ -275,8 +275,8 @@ def validate_username(
 def validate_password(
     password, min_length=8, check_length=True, check_confirmation=True
 ):
-    if not password:
-        return "Password cannot be empty."
+    if error := validate_non_empty(password):
+        return error
     if check_length and len(password) < min_length:
         return "Password must be at least 8 characters long."
     if check_confirmation and password != Prompt.ask(
@@ -288,8 +288,8 @@ def validate_password(
 
 def validate_email(email, check_valid_chars=True, check_uniqueness=True):
     email_regex = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-    if not email:
-        return "Email cannot be empty."
+    if error := validate_non_empty(email):
+        return error
     if check_valid_chars and not re.match(email_regex, email):
         return "Invalid email format. Please try again."
     if check_uniqueness and not is_email_unique(email):
