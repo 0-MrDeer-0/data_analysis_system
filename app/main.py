@@ -300,6 +300,32 @@ def map_position_to_id(position, action):
     return int(position)
 
 
+def find_rows_by_header(value, header="id", limit=1):
+    rows = read_csv_file()
+    headers = rows[0]
+    if header not in headers:
+        available_headers = ", ".join(headers)
+        show_message(
+            "error",
+            f"Header '{header}' not found in the CSV file. Available headers are: {available_headers}.",
+        )
+        return None
+    header_index = headers.index(header)
+    matching_rows = []
+    input(header_index)
+    for row in rows[1:]:
+        if row[header_index] == str(value):
+            matching_rows.append(row)
+            if len(matching_rows) >= limit:
+                break
+    if not matching_rows:
+        show_message("error", f"No rows found with {header} by '{value}'.")
+        return None
+    if limit == 1:
+        return matching_rows[0]
+    return matching_rows
+
+
 # ------ Validation Functions for User Input ------
 
 
@@ -654,6 +680,35 @@ def add_data_process():
         show_message("success", "Data has been successfully added to the file!")
     else:
         show_message("info", "Data entry has been canceled. No changes were made.")
+
+
+# ------ Remove data process ------
+
+
+def remove_data_proess():
+    target = None
+    while not target:
+        show_banner()
+        target = get_input_with_validation(
+            f" 🆔 Please specify the position where you would remove data ['start', 'end', or a specific row number]",
+            lambda value: validate_id(value, action="remove"),
+        )
+    target_id = map_position_to_id(target, "remove")
+    row_to_delete = find_rows_by_header(target_id)
+    if row_to_delete:
+        create_and_display_table(
+            "🔎 The following row has been found",
+            True,
+            ["🆔 ID", "👤 Name", "🚻 Gender", "⏳ Age"],
+            row_to_delete,
+        )
+        confirmation = Prompt.ask(
+            " ⚠️  Are you sure you want to delete this row?", choices=["yes", "no"]
+        )
+        if confirmation == "yes":
+            remove_row(row_to_delete)
+        else:
+            show_message("info", "Deletion cancelled. No changes were made.")
 
 
 # ------ Main Entry Point for Program Execution ------
