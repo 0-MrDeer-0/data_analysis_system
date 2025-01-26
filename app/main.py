@@ -739,6 +739,21 @@ def remove_data_proess():
             show_message("info", "Deletion cancelled. No changes were made.")
 
 
+# ------ Update data process ------
+
+def update_data_process():
+    while True:
+        data_modification_choice = show_header("data_modification")
+        if data_modification_choice == "0":
+            break
+        elif data_modification_choice == "1":
+            add_data_process()
+        elif data_modification_choice == "2":
+            remove_data_proess()
+        else:
+            show_message("error", "Your choice not found!")
+
+
 # ------ Display csv data functions ------
 
 
@@ -929,22 +944,15 @@ def init():
                     if post_login_choice == "0":
                         break
                     elif post_login_choice == "1":
-                        while True:
-                            data_modification_choice = show_header("data_modification")
-                            if data_modification_choice == "0":
-                                break
-                            elif data_modification_choice == "1":
-                                add_data_process()
-                            elif data_modification_choice == "2":
-                                remove_data_proess()
-                            else:
-                                show_message("error", "Your choice not found!")
+                        update_data_process()
                     elif post_login_choice == "2":
                         display_data_proess()
                     elif post_login_choice == "3":
                         analysis_data_proess()
                     elif post_login_choice == "4":
                         search_data_proess()
+                    else:
+                        show_message("error", "Your choice not found!")
             else:
                 console.clear()
                 return
