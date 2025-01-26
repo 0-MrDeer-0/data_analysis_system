@@ -141,6 +141,14 @@ def show_menu(menu_name="user_actions"):
             ],
             "title": "Update Data Menu",
         },
+        "data_analytics": {
+            "items": [
+                "[1] ⚥ Analyze by Gender",
+                "[2] ⏳ Analyze by Age",
+                "[0] 🔙 Back to Main Menu",
+            ],
+            "title": "Explore Data Analysis Menu",
+        },
     }
     menu_data = menus.get(menu_name, {})
     menu_items = menu_data.get("items", [])
@@ -764,6 +772,81 @@ def display_data_proess():
     display_rows_between_ids(start_id, end_id)
 
 
+# ------ Analysis data functions ------
+
+
+def count_csv_rows():
+    rows = read_csv_file()
+    return len(rows) - 1
+
+
+def get_gender_counts():
+    rows = read_csv_file()
+    gender_index = rows[0].index("gender")
+    counts = {"male": 0, "female": 0, "other": 0, "empty": 0}
+    for row in rows[1:]:
+        gender = row[gender_index].strip().lower()
+        if gender == "male":
+            counts["male"] += 1
+        elif gender == "female":
+            counts["female"] += 1
+        elif gender == "other":
+            counts["other"] += 1
+        else:
+            counts["empty"] += 1
+    return counts
+
+
+def calculate_age_statistics():
+    rows = read_csv_file()
+    age_index = rows[0].index("age")
+    age_list = []
+    for row in rows[1:]:
+        age = row[age_index].strip()
+        if row[age_index].isdigit():
+            age_list.append(int(age))
+    if not age_list:
+        return {"max_age": None, "min_age": None, "average_age": None}
+    age_stats = {
+        "max age": max(age_list),
+        "min age": min(age_list),
+        "average age": round(sum(age_list) / len(age_list), 2),
+    }
+    return age_stats
+
+
+def analysis_data_proess():
+    coutn_rows = str(count_csv_rows())
+    gender_counts = get_gender_counts()
+    age_counts = calculate_age_statistics()
+    while True:
+        choice = show_menu("data_analytics")
+        if choice == "0":
+            break
+        elif choice == "1":
+            create_and_display_table(
+                "Gender Static",
+                True,
+                headers=["total"] + list(gender_counts.keys()),
+                data=[coutn_rows] + [str(value) for value in gender_counts.values()],
+            )
+            show_message(
+                "success", "Your data analysis has been successfully displayed!"
+            )
+        elif choice == "2":
+            create_and_display_table(
+                "Age Static",
+                True,
+                headers=["total"] + list(age_counts.keys()),
+                data=[coutn_rows] + [str(value) for value in age_counts.values()],
+            )
+            show_message(
+                "success", "Your data analysis has been successfully displayed!"
+            )
+        else:
+            show_message("error", "Your choice not found!11")
+
+
 # ------ Main Entry Point for Program Execution ------
 
 
@@ -792,6 +875,8 @@ def init():
                                 show_message("error", "Your choice not found!")
                     elif post_login_choice == "2":
                         display_data_proess()
+                    elif post_login_choice == "3":
+                        analysis_data_proess()
             else:
                 console.clear()
                 return
