@@ -149,6 +149,14 @@ def show_menu(menu_name="user_actions"):
             ],
             "title": "Explore Data Analysis Menu",
         },
+        "search_data": {
+            "items": [
+                "[1] 🆔 Search by ID",
+                "[2] 👤 Filter by Name",
+                "[0] 🔙 Back to Main Menu",
+            ],
+            "title": "Filter and Search Criteria",
+        },
     }
     menu_data = menus.get(menu_name, {})
     menu_items = menu_data.get("items", [])
@@ -847,6 +855,64 @@ def analysis_data_proess():
             show_message("error", "Your choice not found!11")
 
 
+# ------ Search data functions ------
+
+def find_by_id():
+    target = None
+    while not target:
+        show_banner()
+        target = get_input_with_validation(
+            f" 🆔 Please specify the position where you would find data ['start', 'end', or a specific row number]",
+            lambda value: validate_id(value, action="find"),
+        )
+    target_id = map_position_to_id(target, "remove")
+    find_row = find_rows_by_header(target_id)
+    if find_row:
+        create_and_display_table(
+            "Rows Found Based on Search Criteria",
+            True,
+            ["🆔 Id", "👤 Name", "🚻 Gender", "⏳ Age"],
+            find_row,
+            padding=(0, 3),
+        )
+        show_message("success", "Your data analysis has been successfully displayed!")
+
+
+def filter_by_name():
+    filter_name = None
+    while not filter_name:
+        show_banner()
+        filter_name = get_input_with_validation(
+            f" 👤 Please specify the name where you would filtering data",
+            validate_person_name,
+        )
+    find_rows = find_rows_by_header(filter_name, "name", None)
+    if find_rows:
+        create_and_display_table(
+            "Rows Found Based on Search Criteria",
+            True,
+            ["🆔 Id", "👤 Name", "🚻 Gender", "⏳ Age"],
+            find_rows,
+            padding=(0, 3),
+        )
+        show_message("success", "Your data analysis has been successfully displayed!")
+
+
+def search_data_proess():
+    while True:
+        choice = show_menu(
+            "search_data",
+        )
+        if choice == "0":
+            break
+        elif choice == "1":
+            find_by_id()
+        elif choice == "2":
+            filter_by_name()
+        else:
+            show_message("error", "Your choice not found!")
+
+
 # ------ Main Entry Point for Program Execution ------
 
 
@@ -877,6 +943,8 @@ def init():
                         display_data_proess()
                     elif post_login_choice == "3":
                         analysis_data_proess()
+                    elif post_login_choice == "4":
+                        search_data_proess()
             else:
                 console.clear()
                 return
