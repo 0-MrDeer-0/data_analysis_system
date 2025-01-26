@@ -830,37 +830,45 @@ def calculate_age_statistics():
             age_list.append(int(age))
     if not age_list:
         return {"max_age": None, "min_age": None, "average_age": None}
+    age_counts = {}
+    for age in age_list:
+        if age in age_counts:
+            age_counts[age] += 1
+        else:
+            age_counts[age] = 1
+    most_frequent_age = max(age_counts, key=age_counts.get)
     age_stats = {
-        "max age": max(age_list),
+        "Max age": max(age_list),
         "min age": min(age_list),
-        "average age": round(sum(age_list) / len(age_list), 2),
+        "Average age": round(sum(age_list) / len(age_list), 2),
+        "Mode": most_frequent_age,
     }
     return age_stats
 
 
 def analysis_data_proess():
     coutn_rows = str(count_csv_rows())
-    gender_counts = get_gender_counts()
-    age_counts = calculate_age_statistics()
     while True:
         choice = show_menu("data_analytics")
         if choice == "0":
             break
         elif choice == "1":
+            gender_counts = get_gender_counts()
             create_and_display_table(
                 "Gender Static",
                 True,
-                headers=["total"] + list(gender_counts.keys()),
+                headers=["Total"] + list(gender_counts.keys()),
                 data=[coutn_rows] + [str(value) for value in gender_counts.values()],
             )
             show_message(
                 "success", "Your data analysis has been successfully displayed!"
             )
         elif choice == "2":
+            age_counts = calculate_age_statistics()
             create_and_display_table(
                 "Age Static",
                 True,
-                headers=["total"] + list(age_counts.keys()),
+                headers=["Total"] + list(age_counts.keys()),
                 data=[coutn_rows] + [str(value) for value in age_counts.values()],
             )
             show_message(
