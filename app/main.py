@@ -322,14 +322,14 @@ def find_rows_by_header(value, header="id", limit=1):
     header_index = headers.index(header)
     matching_rows = []
     for row in rows[1:]:
-        if row[header_index] == str(value):
+        if row[header_index].lower() == str(value).lower():
             matching_rows.append(row)
-            if len(matching_rows) >= limit:
+            if limit is not None and len(matching_rows) >= limit:
                 break
     if not matching_rows:
         show_message("error", f"No rows found with {header} by '{value}'.")
         return None
-    if limit == 1:
+    if limit is not None and limit == 1:
         return matching_rows[0]
     return matching_rows
 
